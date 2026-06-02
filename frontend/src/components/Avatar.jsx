@@ -13,9 +13,8 @@ function Avatar({ name, color, isSelected, side = 'left', onClick, photo, onPhot
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => onPhotoChange && onPhotoChange(ev.target.result);
-    reader.readAsDataURL(file);
+    // We now pass the raw file directly up to App.jsx instead of reading as Base64
+    if (onPhotoChange) onPhotoChange(file);
   };
 
   // Unique clip-path id per avatar so they don't clash

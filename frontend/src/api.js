@@ -36,3 +36,13 @@ export async function bloomFlower(id) {
   const res = await fetch(`${BASE}/flowers/${id}/bloom`, { method: 'PATCH' });
   return res.json();
 }
+
+export async function uploadAvatar(who, photoFile) {
+  const form = new FormData();
+  if (photoFile) form.append('photo', photoFile);
+  const res = await fetch(`${BASE}/garden/avatar/${who}`, { 
+    method: 'POST', 
+    body: form 
+  });
+  return res.json();
+}

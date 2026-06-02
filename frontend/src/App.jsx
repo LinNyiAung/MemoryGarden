@@ -5,7 +5,10 @@ import GardenCanvas from './components/GardenCanvas.jsx';
 import PlantModal from './components/PlantModal.jsx';
 import MemoryModal from './components/MemoryModal.jsx';
 import { FlowerSVG } from './components/FlowerSVG.jsx';
-import { getFlowers, getGarden, plantFlower, deleteFlower, updateGarden } from './api.js';
+import { getFlowers, getGarden, plantFlower, deleteFlower, updateGarden, uploadAvatar } from './api.js';
+
+// Hardcoded names
+const NAMES = { him: 'Lin Nyi Aung', her: 'Htet Hsu Waddy' };
 
 // Falling petals animation
 function FallingPetals() {
@@ -30,8 +33,8 @@ function FallingPetals() {
 
 export default function App() {
   const [flowers, setFlowers] = useState([]);
-  const [garden, setGarden] = useState({ title: 'Our Memory Garden' });
-  const [selectedAvatar, setSelectedAvatar] = useState(null); // 'him' | 'her'
+  const [garden, setGarden] = useState({ title: 'Our Memory Garden', himPhoto: null, herPhoto: null });
+  const [selectedAvatar, setSelectedAvatar] = useState(null); 
   const [plantingMode, setPlantingMode] = useState(false);
   const [pendingPosition, setPendingPosition] = useState(null);
   const [selectedFlower, setSelectedFlower] = useState(null);
@@ -39,23 +42,6 @@ export default function App() {
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState('');
   const [toast, setToast] = useState(null);
-  const [nameConfig, setNameConfig] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('gardenNames')) || { him: 'Him', her: 'Her' }; } catch { return { him: 'Him', her: 'Her' }; }
-  });
-  const [showNameSetup, setShowNameSetup] = useState(() => {
-    try { return !localStorage.getItem('gardenNames'); } catch { return true; }
-  });
-  const [nameInputs, setNameInputs] = useState({ him: '', her: '' });
-  // Avatar photos stored as base64 in localStorage
-  const [avatarPhotos, setAvatarPhotos] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('gardenPhotos')) || { him: null, her: null }; } catch { return { him: null, her: null }; }
-  });
-
-  const handleAvatarPhoto = (who, dataUrl) => {
-    const updated = { ...avatarPhotos, [who]: dataUrl };
-    setAvatarPhotos(updated);
-    localStorage.setItem('gardenPhotos', JSON.stringify(updated));
-  };
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
@@ -76,13 +62,8 @@ export default function App() {
   useEffect(() => { loadData(); }, [loadData]);
 
   const handleAvatarClick = (who) => {
-    if (selectedAvatar === who) {
-      setSelectedAvatar(null);
-      setPlantingMode(false);
-    } else {
-      setSelectedAvatar(who);
-      setPlantingMode(false);
-    }
+    setSelectedAvatar(selectedAvatar === who ? null : who);
+    setPlantingMode(false);
   };
 
   const handlePlantButton = () => {
@@ -128,22 +109,16 @@ export default function App() {
     } catch { showToast('❌ Could not save title.'); }
   };
 
-  const handleNameSetup = () => {
-    const config = { him: nameInputs.him || 'Him', her: nameInputs.her || 'Her' };
-    setNameConfig(config);
-    localStorage.setItem('gardenNames', JSON.stringify(config));
-    setShowNameSetup(false);
+  const handleAvatarPhotoUpload = async (who, file) => {
+    try {
+      const updatedGarden = await uploadAvatar(who, file);
+      setGarden(updatedGarden); // Update garden state to get the new photo paths
+      showToast('📸 Photo updated successfully!');
+    } catch (e) {
+      showToast('❌ Failed to upload photo.');
+    }
   };
 
-  const handleSetupPhoto = (who, e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => handleAvatarPhoto(who, ev.target.result);
-    reader.readAsDataURL(file);
-  };
-
-  // Avatar elements to pass to garden
   const avatarElements = (
     <>
       <motion.div
@@ -152,13 +127,13 @@ export default function App() {
         transition={{ duration: 0.4 }}
       >
         <Avatar
-          name={nameConfig.him}
+          name={NAMES.him}
           color="#6ba3d4"
           isSelected={selectedAvatar === 'him'}
           expression={selectedAvatar === 'him' ? (plantingMode ? 'planting' : 'happy') : 'idle'}
           side="left"
-          photo={avatarPhotos.him}
-          onPhotoChange={(url) => handleAvatarPhoto('him', url)}
+          photo={garden.himPhoto}
+          onPhotoChange={(file) => handleAvatarPhotoUpload('him', file)}
           onClick={() => handleAvatarClick('him')}
         />
       </motion.div>
@@ -168,13 +143,13 @@ export default function App() {
         transition={{ duration: 0.4 }}
       >
         <Avatar
-          name={nameConfig.her}
+          name={NAMES.her}
           color="#e8a4c4"
           isSelected={selectedAvatar === 'her'}
           expression={selectedAvatar === 'her' ? (plantingMode ? 'planting' : 'excited') : 'idle'}
           side="right"
-          photo={avatarPhotos.her}
-          onPhotoChange={(url) => handleAvatarPhoto('her', url)}
+          photo={garden.herPhoto}
+          onPhotoChange={(file) => handleAvatarPhotoUpload('her', file)}
           onClick={() => handleAvatarClick('her')}
         />
       </motion.div>
@@ -185,113 +160,8 @@ export default function App() {
     <div style={{ minHeight: '100vh', background: 'var(--sky)', position: 'relative' }}>
       <FallingPetals />
 
-      {/* Name + photo setup modal */}
-      <AnimatePresence>
-        {showNameSetup && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{
-              position: 'fixed', inset: 0, background: 'rgba(61,44,30,0.5)',
-              backdropFilter: 'blur(8px)', zIndex: 2000,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
-            }}>
-            <motion.div initial={{ scale: 0.8, y: 30 }} animate={{ scale: 1, y: 0 }}
-              style={{
-                background: 'linear-gradient(135deg, #fffaf5, #fdf0e8)',
-                borderRadius: 28, padding: '32px 36px 36px', maxWidth: 440, width: '100%',
-                boxShadow: '0 20px 60px rgba(61,44,30,0.3)',
-                textAlign: 'center'
-              }}>
-              <div style={{ fontSize: 44, marginBottom: 10 }}>🌸</div>
-              <h1 style={{ fontSize: 26, color: 'var(--text-dark)', marginBottom: 6 }}>Welcome to</h1>
-              <h2 style={{ fontSize: 19, color: 'var(--petal-pink)', marginBottom: 8, fontStyle: 'italic' }}>Our Memory Garden</h2>
-              <p style={{ fontSize: 13, color: 'var(--text-light)', marginBottom: 26 }}>
-                Set your names and optionally add your photos 📸
-              </p>
-
-              {/* Two-column avatar setup cards */}
-              <div style={{ display: 'flex', gap: 14, marginBottom: 20 }}>
-                {[
-                  { who: 'him', emoji: '💙', color: '#6ba3d4', placeholder: 'His name' },
-                  { who: 'her', emoji: '🩷', color: '#e8a4c4', placeholder: 'Her name' },
-                ].map(({ who, emoji, color, placeholder }) => (
-                  <div key={who} style={{
-                    flex: 1, background: 'rgba(255,255,255,0.7)',
-                    borderRadius: 18, padding: '16px 12px',
-                    border: `1.5px solid ${color}55`,
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10
-                  }}>
-                    {/* Photo circle */}
-                    <label style={{ cursor: 'pointer', position: 'relative' }}>
-                      <div style={{
-                        width: 72, height: 72, borderRadius: '50%',
-                        background: avatarPhotos[who] ? 'transparent' : `${color}22`,
-                        border: `2.5px dashed ${color}88`,
-                        overflow: 'hidden',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        transition: 'border-color 0.2s',
-                      }}>
-                        {avatarPhotos[who] ? (
-                          <img src={avatarPhotos[who]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        ) : (
-                          <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: 22 }}>📷</div>
-                            <div style={{ fontSize: 10, color, fontWeight: 600, marginTop: 2 }}>Add photo</div>
-                          </div>
-                        )}
-                      </div>
-                      {avatarPhotos[who] && (
-                        <div style={{
-                          position: 'absolute', bottom: 0, right: 0,
-                          background: color, borderRadius: '50%',
-                          width: 22, height: 22, fontSize: 12,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          border: '2px solid white'
-                        }}>✏️</div>
-                      )}
-                      <input type="file" accept="image/*" style={{ display: 'none' }}
-                        onChange={e => handleSetupPhoto(who, e)} />
-                    </label>
-
-                    {/* Name input */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}>
-                      <span style={{ fontSize: 16 }}>{emoji}</span>
-                      <input
-                        placeholder={placeholder}
-                        value={nameInputs[who]}
-                        onChange={e => setNameInputs(p => ({ ...p, [who]: e.target.value }))}
-                        style={{
-                          flex: 1, padding: '8px 10px', borderRadius: 10, minWidth: 0,
-                          border: `1.5px solid ${color}55`,
-                          background: 'rgba(255,255,255,0.9)', fontSize: 14,
-                          outline: 'none', color: 'var(--text-dark)', textAlign: 'center'
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <p style={{ fontSize: 11, color: 'var(--text-light)', marginBottom: 16 }}>
-                Photos are stored locally in your browser. You can change them anytime by clicking the 📷 button on your avatar.
-              </p>
-
-              <button onClick={handleNameSetup} style={{
-                width: '100%', padding: '14px 0',
-                background: 'linear-gradient(135deg, #f4a0b5, #e88aa0)',
-                color: 'white', border: 'none', borderRadius: 14,
-                fontSize: 16, fontWeight: 700, cursor: 'pointer',
-                boxShadow: '0 6px 20px rgba(244,100,130,0.35)'
-              }}>
-                Start Our Garden 🌱
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Main layout */}
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 20px' }}>
-
+        
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           {editingTitle ? (
@@ -383,7 +253,7 @@ export default function App() {
               animate={{ opacity: 1 }}
               style={{ fontSize: 13, color: 'var(--text-light)' }}
             >
-              {selectedAvatar === 'him' ? nameConfig.him : nameConfig.her} is ready to plant 🌿
+              {selectedAvatar === 'him' ? NAMES.him : NAMES.her} is ready to plant 🌿
             </motion.div>
           )}
         </div>
@@ -409,7 +279,6 @@ export default function App() {
           />
         )}
 
-        {/* Avatar instruction */}
         {!selectedAvatar && !loading && (
           <motion.p
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}
@@ -466,17 +335,15 @@ export default function App() {
           </div>
         )}
 
-        {/* Footer */}
         <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-light)', marginTop: 40, paddingBottom: 20 }}>
-          Made with 💕 for {nameConfig.him} & {nameConfig.her}
+          Made with 💕 for {NAMES.him} & {NAMES.her}
         </p>
       </div>
 
-      {/* Modals */}
       {pendingPosition && (
         <PlantModal
           position={pendingPosition}
-          planter={selectedAvatar === 'him' ? nameConfig.him : nameConfig.her}
+          planter={selectedAvatar === 'him' ? NAMES.him : NAMES.her}
           onPlant={handlePlantConfirm}
           onClose={() => setPendingPosition(null)}
         />
@@ -490,7 +357,6 @@ export default function App() {
         />
       )}
 
-      {/* Toast */}
       <AnimatePresence>
         {toast && (
           <motion.div
