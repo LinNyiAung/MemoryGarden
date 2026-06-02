@@ -1,0 +1,101 @@
+:root {
+  --soil: #7c5c3e;
+  --soil-light: #a07850;
+  --grass: #5a9e6f;
+  --grass-light: #7ec896;
+  --sky: #fdf6ef;
+  --sky-deep: #f5e6d3;
+  --petal-pink: #f4a0b5;
+  --petal-yellow: #f7d76a;
+  --petal-purple: #c8a4d4;
+  --petal-red: #e86a6a;
+  --petal-white: #f8f4ee;
+  --petal-blue: #9ab8e4;
+  --stem: #4a7c59;
+  --text-dark: #3d2c1e;
+  --text-mid: #6b4f3a;
+  --text-light: #a08060;
+  --card-bg: rgba(255,250,245,0.95);
+  --shadow: rgba(61,44,30,0.12);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Lato', sans-serif;
+  background: var(--sky);
+  color: var(--text-dark);
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+h1, h2, h3 {
+  font-family: 'Playfair Display', serif;
+}
+
+button {
+  cursor: pointer;
+  font-family: 'Lato', sans-serif;
+}
+
+input, textarea, select {
+  font-family: 'Lato', sans-serif;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--sky-deep);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--soil-light);
+  border-radius: 3px;
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(-2deg); }
+  50% { transform: translateY(-8px) rotate(2deg); }
+}
+
+@keyframes sway {
+  0%, 100% { transform: rotate(-3deg); transform-origin: bottom center; }
+  50% { transform: rotate(3deg); transform-origin: bottom center; }
+}
+
+@keyframes bloom {
+  0% { transform: scale(0) rotate(-30deg); opacity: 0; }
+  60% { transform: scale(1.15) rotate(5deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes petals-fall {
+  0% { transform: translateY(-10px) rotate(0deg); opacity: 0; }
+  10% { opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes bounce-in {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.05); }
+  70% { transform: scale(0.95); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes grass-wave {
+  0%, 100% { transform: skewX(0deg); }
+  25% { transform: skewX(2deg); }
+  75% { transform: skewX(-2deg); }
+}
