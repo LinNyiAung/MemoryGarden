@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FlowerSVG } from './FlowerSVG.jsx';
+import WeatherEffects from './WeatherEffects.jsx';
 
 // ─── Small scene helpers ──────────────────────────────────────────────────────
 
@@ -421,7 +422,7 @@ function GardenBackground({ phase }) {
 
 // ─── Main canvas ──────────────────────────────────────────────────────────────
 
-function GardenCanvas({ flowers, selectedAvatar, plantingMode, onPlantAt, onFlowerClick, avatarPositions, phase }) {
+function GardenCanvas({ flowers, selectedAvatar, plantingMode, onPlantAt, onFlowerClick, avatarPositions, phase, weather }) {
   const canvasRef = useRef();
   const [hoverPos, setHoverPos] = useState(null);
   const [newFlowerIds, setNewFlowerIds] = useState(new Set());
@@ -489,6 +490,7 @@ function GardenCanvas({ flowers, selectedAvatar, plantingMode, onPlantAt, onFlow
       }}
     >
       <GardenBackground phase={currentPhase} />
+      <WeatherEffects condition={weather?.condition} />
 
       {/* Planting zone overlays */}
       {plantingMode && (

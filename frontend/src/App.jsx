@@ -7,6 +7,8 @@ import MemoryModal from './components/MemoryModal.jsx';
 import { FlowerSVG } from './components/FlowerSVG.jsx';
 import { getFlowers, getGarden, plantFlower, deleteFlower, updateGarden, uploadAvatar } from './api.js';
 import { useDayNight } from './useDayNight.js';
+import { useWeather } from './useWeather.js';
+import WeatherBadge from './components/WeatherBadge.jsx';
 
 // Hardcoded names
 const NAMES = { him: 'Lin Nyi Aung', her: 'Htet Hsu Waddy' };
@@ -99,6 +101,9 @@ export default function App() {
   // ── Day/Night ──
   const { phase, timeString } = useDayNight();
   const isNight = phase.name === 'deep-night' || phase.name === 'night' || phase.name === 'dusk';
+
+  // ── Weather Sync ──
+  const { weather, loading: weatherLoading, error: weatherError, locationName, refresh: refreshWeather } = useWeather();
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
@@ -215,6 +220,14 @@ export default function App() {
     >
       <FallingPetals phase={phase} />
       <DayNightBadge phase={phase} timeString={timeString} />
+      <WeatherBadge
+        weather={weather}
+        locationName={locationName}
+        loading={weatherLoading}
+        error={weatherError}
+        isNight={isNight}
+        onRefresh={refreshWeather}
+      />
 
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 20px' }}>
 
@@ -296,6 +309,7 @@ export default function App() {
             onFlowerClick={setSelectedFlower}
             avatarPositions={avatarElements}
             phase={phase}
+            weather={weather}
           />
         )}
 
