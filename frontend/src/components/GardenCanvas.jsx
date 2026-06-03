@@ -381,8 +381,8 @@ function GardenCanvas({ flowers, selectedAvatar, plantingMode, onPlantAt, onFlow
     });
   }, [flowers.length]);
 
-  const PLANT_Y_MIN = 58; // below the fence line
-  const PLANT_Y_MAX = 88; // above the bottom soil edge
+  const PLANT_Y_MIN = 49; // just above fence base — full grass area is plantable
+  const PLANT_Y_MAX = 79; // above the bottom soil edge
 
   const handleClick = (e) => {
     if (!plantingMode) return;
@@ -421,15 +421,15 @@ function GardenCanvas({ flowers, selectedAvatar, plantingMode, onPlantAt, onFlow
       {/* Planting zone overlays */}
       {plantingMode && (
         <>
-          {/* Sky / fence area — greyed out, not plantable */}
+          {/* Sky area — greyed out, not plantable */}
           <div style={{
             position: 'absolute', top: 0, left: 0, right: 0,
-            height: '58%',
+            height: '52%',
             background: 'rgba(30,20,10,0.28)',
             zIndex: 9, pointerEvents: 'none',
             borderBottom: '2px dashed rgba(255,200,100,0.5)',
           }} />
-          {/* "🚫 sky" label */}
+          {/* "🚫" label */}
           <div style={{
             position: 'absolute', top: '22%', left: '50%',
             transform: 'translateX(-50%)',
@@ -449,8 +449,8 @@ function GardenCanvas({ flowers, selectedAvatar, plantingMode, onPlantAt, onFlow
           }} />
           {/* Garden zone glow border */}
           <div style={{
-            position: 'absolute', top: '58%', left: 0, right: 0,
-            height: '30%',
+            position: 'absolute', top: '52%', left: 0, right: 0,
+            height: '36%',
             border: '2px solid rgba(100,220,120,0.35)',
             boxShadow: 'inset 0 0 20px rgba(80,200,100,0.08)',
             zIndex: 9, pointerEvents: 'none',
