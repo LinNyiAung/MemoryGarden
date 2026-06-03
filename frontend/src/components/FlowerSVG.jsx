@@ -11,12 +11,36 @@ export const FLOWER_TYPES = [
   { id: 'cosmos', name: 'Cosmos', emoji: '🌸', color: '#e8a4c8' },
 ];
 
-const stemPath = (h = 40) => (
-  <g>
-    <line x1="50" y1={100 - h} x2="50" y2="100" stroke="#4a7c59" strokeWidth="3" strokeLinecap="round" />
-    <path d={`M50 ${100 - h * 0.4} Q35 ${100 - h * 0.55} 30 ${100 - h * 0.7}`} stroke="#4a7c59" strokeWidth="2" fill="none" strokeLinecap="round" />
-  </g>
-);
+const stemPath = (h = 40) => {
+  const base = 100;
+  const top = base - h;
+  const leafY = base - h * 0.45;
+  const leafY2 = base - h * 0.68;
+  return (
+    <g>
+      {/* Stem shadow for depth */}
+      <line x1="52" y1={top + 2} x2="52" y2={base} stroke="#2e5c38" strokeWidth="3.5" strokeLinecap="round" opacity="0.35" />
+      {/* Main stem — bright vivid green */}
+      <line x1="50" y1={top} x2="50" y2={base} stroke="#3db060" strokeWidth="4" strokeLinecap="round" />
+      {/* Stem highlight */}
+      <line x1="49" y1={top + 4} x2="49" y2={base - 6} stroke="#6cd880" strokeWidth="1.2" strokeLinecap="round" opacity="0.55" />
+      {/* Left leaf */}
+      <path
+        d={`M50 ${leafY} Q32 ${leafY - 10} 28 ${leafY - 20} Q36 ${leafY - 4} 50 ${leafY}`}
+        fill="#3db060" stroke="#2e9050" strokeWidth="0.8"
+      />
+      <line x1="50" y1={leafY} x2="33" y2={leafY - 16} stroke="#6cd880" strokeWidth="0.7" opacity="0.5" />
+      {/* Right leaf */}
+      <path
+        d={`M50 ${leafY2} Q68 ${leafY2 - 10} 72 ${leafY2 - 20} Q64 ${leafY2 - 4} 50 ${leafY2}`}
+        fill="#34a854" stroke="#2e9050" strokeWidth="0.8"
+      />
+      <line x1="50" y1={leafY2} x2="67" y2={leafY2 - 16} stroke="#6cd880" strokeWidth="0.7" opacity="0.5" />
+      {/* Soil anchor dot */}
+      <ellipse cx="50" cy={base} rx="5" ry="3" fill="#5a3a1a" opacity="0.55" />
+    </g>
+  );
+};
 
 function Rose({ size = 100, animate }) {
   return (
@@ -74,9 +98,12 @@ function Lavender({ size = 100, animate }) {
   return (
     <svg width={size} height={size} viewBox="0 0 100 100">
       <g>
-        <line x1="50" y1="30" x2="50" y2="100" stroke="#4a7c59" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="50" y1="55" x2="38" y2="70" stroke="#4a7c59" strokeWidth="1.5" strokeLinecap="round" />
-        <line x1="50" y1="60" x2="62" y2="75" stroke="#4a7c59" strokeWidth="1.5" strokeLinecap="round" />
+        <line x1="52" y1="32" x2="52" y2="100" stroke="#2e5c38" strokeWidth="3.5" strokeLinecap="round" opacity="0.3" />
+        <line x1="50" y1="30" x2="50" y2="100" stroke="#3db060" strokeWidth="4" strokeLinecap="round" />
+        <line x1="49" y1="34" x2="49" y2="94" stroke="#6cd880" strokeWidth="1.2" strokeLinecap="round" opacity="0.5" />
+        <path d="M50 60 Q32 52 28 42 Q38 54 50 60" fill="#3db060" stroke="#2e9050" strokeWidth="0.8" />
+        <path d="M50 70 Q68 62 72 52 Q62 64 50 70" fill="#34a854" stroke="#2e9050" strokeWidth="0.8" />
+        <ellipse cx="50" cy="100" rx="5" ry="3" fill="#5a3a1a" opacity="0.55" />
       </g>
       <g style={animate ? { animation: 'bloom 0.6s ease-out' } : {}}>
         {[30,36,42,48,54,60,66,72,78].map((y, i) => (
@@ -135,10 +162,13 @@ function Bluebell({ size = 100, animate }) {
   return (
     <svg width={size} height={size} viewBox="0 0 100 100">
       <g>
-        <line x1="50" y1="25" x2="50" y2="100" stroke="#4a7c59" strokeWidth="2.5" strokeLinecap="round" />
+        <line x1="52" y1="27" x2="52" y2="100" stroke="#2e5c38" strokeWidth="3.5" strokeLinecap="round" opacity="0.3" />
+        <line x1="50" y1="25" x2="50" y2="100" stroke="#3db060" strokeWidth="4" strokeLinecap="round" />
+        <line x1="49" y1="30" x2="49" y2="94" stroke="#6cd880" strokeWidth="1.2" strokeLinecap="round" opacity="0.5" />
         {[-20,-10,0,10,20].map((x,i)=>(
-          <line key={i} x1="50" y1={45+i*5} x2={50+x} y2={55+i*5} stroke="#4a7c59" strokeWidth="1.5" strokeLinecap="round" />
+          <line key={i} x1="50" y1={45+i*5} x2={50+x} y2={55+i*5} stroke="#3db060" strokeWidth="2" strokeLinecap="round" />
         ))}
+        <ellipse cx="50" cy="100" rx="5" ry="3" fill="#5a3a1a" opacity="0.55" />
       </g>
       <g style={animate ? { animation: 'bloom 0.6s ease-out' } : {}}>
         {[-20,-10,0,10,20].map((x,i)=>(
