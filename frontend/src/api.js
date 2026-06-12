@@ -1,4 +1,4 @@
-const BASE = 'https://memorygarden.onrender.com/api';
+const BASE = 'https://memorygardenapi.onrender.com/api';
 
 export async function getFlowers() {
   const res = await fetch(`${BASE}/flowers`);
