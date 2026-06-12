@@ -1,170 +1,243 @@
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-const { v4: uuidv4 } = require('uuid');
-const sqlite3 = require('sqlite3').verbose();
-const { open } = require('sqlite');
+const mongoose = require('mongoose');
+const { v2: cloudinary } = require('cloudinary');
+require('dotenv').config();
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
-// ─── File storage paths ──────────────────────────────────────────────────────
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+// ─── Cloudinary Config ────────────────────────────────────────────────────────
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
-// ─── Database Setup (SQLite) ─────────────────────────────────────────────────
-let db;
+// ─── MongoDB Setup (Mongoose) ─────────────────────────────────────────────────
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('🌿 Connected to MongoDB Atlas'))
+  .catch(err => console.error('MongoDB connection error:', err));
+
+// Transform function to convert MongoDB's `_id` to `id` for React frontend
+const transformId = (doc, ret) => {
+  ret.id = ret._id.toString();
+  delete ret._id;
+  delete ret.__v;
+};
+
+// Schemas
+const gardenSchema = new mongoose.Schema({
+  title: String,
+  himName: String,
+  herName: String,
+  himPhoto: String,
+  himPhotoId: String,   // Store Cloudinary Public ID for deletion
+  herPhoto: String,
+  herPhotoId: String,
+}, { toJSON: { transform: transformId } });
+
+const flowerSchema = new mongoose.Schema({
+  x: Number,
+  y: Number,
+  plantedBy: String,
+  message: String,
+  date: String,
+  flowerType: String,
+  photo: String,        // Cloudinary URL
+  photoId: String,      // Cloudinary Public ID
+  createdAt: String,
+  bloom: Number
+}, { toJSON: { transform: transformId } });
+
+const Garden = mongoose.model('Garden', gardenSchema);
+const Flower = mongoose.model('Flower', flowerSchema);
+
+// Initialize garden document if the database is completely empty
 (async () => {
-  db = await open({
-    filename: path.join(__dirname, 'database.sqlite'),
-    driver: sqlite3.Database
-  });
-
-  // Create tables if they don't exist
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS garden (
-      id INTEGER PRIMARY KEY,
-      title TEXT,
-      himName TEXT,
-      herName TEXT,
-      himPhoto TEXT,
-      herPhoto TEXT
-    );
-    CREATE TABLE IF NOT EXISTS flowers (
-      id TEXT PRIMARY KEY,
-      x REAL,
-      y REAL,
-      plantedBy TEXT,
-      message TEXT,
-      date TEXT,
-      flowerType TEXT,
-      photo TEXT,
-      createdAt TEXT,
-      bloom INTEGER
-    );
-  `);
-
-  // Initialize the garden row if it's completely empty
-  const garden = await db.get('SELECT * FROM garden WHERE id = 1');
-  if (!garden) {
-    await db.run(
-      'INSERT INTO garden (title, himName, herName) VALUES (?, ?, ?)',
-      ['Our Memory Garden', 'Lin Nyi Aung', 'Htet Hsu Waddy']
-    );
+  try {
+    const count = await Garden.countDocuments();
+    if (count === 0) {
+      await Garden.create({
+        title: 'Our Memory Garden',
+        himName: 'Lin Nyi Aung',
+        herName: 'Htet Hsu Waddy'
+      });
+      console.log('🌱 Garden initialized in MongoDB!');
+    }
+  } catch (err) {
+    console.error('Initialization error:', err);
   }
 })();
 
-// ─── Multer (photo uploads) ───────────────────────────────────────────────────
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => cb(null, uuidv4() + path.extname(file.originalname))
-});
+// ─── Multer (Memory Storage) ──────────────────────────────────────────────────
+// Keeps file in memory so we can stream it directly to Cloudinary
+const storage = multer.memoryStorage();
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
+
+// Helper function to stream buffer to Cloudinary
+const uploadToCloudinary = (buffer) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: 'memory_garden' },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+    stream.end(buffer); // write the file buffer into the stream
+  });
+};
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static(uploadsDir));
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
 // GET all flowers
 app.get('/api/flowers', async (req, res) => {
-  const flowers = await db.all('SELECT * FROM flowers');
-  res.json(flowers);
+  try {
+    const flowers = await Flower.find();
+    res.json(flowers);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // GET garden info
 app.get('/api/garden', async (req, res) => {
-  const garden = await db.get('SELECT * FROM garden WHERE id = 1');
-  res.json(garden);
+  try {
+    let garden = await Garden.findOne();
+    res.json(garden);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // PUT update garden title
 app.put('/api/garden', async (req, res) => {
-  if (req.body.title) {
-    await db.run('UPDATE garden SET title = ? WHERE id = 1', [req.body.title]);
+  try {
+    if (req.body.title) {
+      await Garden.findOneAndUpdate({}, { title: req.body.title });
+    }
+    const garden = await Garden.findOne();
+    res.json(garden);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-  const garden = await db.get('SELECT * FROM garden WHERE id = 1');
-  res.json(garden);
 });
 
 // POST upload/update avatar photos
 app.post('/api/garden/avatar/:who', upload.single('photo'), async (req, res) => {
-  const who = req.params.who;
-  if (who !== 'him' && who !== 'her') return res.status(400).json({ error: 'Invalid person' });
-  
-  if (req.file) {
-    const photoPath = `/uploads/${req.file.filename}`;
-    const column = who === 'him' ? 'himPhoto' : 'herPhoto';
+  try {
+    const who = req.params.who;
+    if (who !== 'him' && who !== 'her') return res.status(400).json({ error: 'Invalid person' });
     
-    // Optional: Fetch old photo and delete it from server to save space
-    const oldGarden = await db.get(`SELECT ${column} FROM garden WHERE id = 1`);
-    if (oldGarden && oldGarden[column]) {
-      const oldPath = path.join(__dirname, oldGarden[column]);
-      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-    }
+    const garden = await Garden.findOne();
+    if (!garden) return res.status(404).json({ error: 'Garden not found' });
 
-    await db.run(`UPDATE garden SET ${column} = ? WHERE id = 1`, [photoPath]);
+    if (req.file) {
+      const photoCol = who === 'him' ? 'himPhoto' : 'herPhoto';
+      const photoIdCol = who === 'him' ? 'himPhotoId' : 'herPhotoId';
+
+      // 1. If an old photo exists, delete it from Cloudinary to save space
+      if (garden[photoIdCol]) {
+        await cloudinary.uploader.destroy(garden[photoIdCol]);
+      }
+
+      // 2. Upload new photo to Cloudinary
+      const result = await uploadToCloudinary(req.file.buffer);
+      
+      // 3. Update database
+      garden[photoCol] = result.secure_url;
+      garden[photoIdCol] = result.public_id;
+      await garden.save();
+    }
+    
+    res.json(garden);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
   }
-  
-  const garden = await db.get('SELECT * FROM garden WHERE id = 1');
-  res.json(garden);
 });
 
 // POST plant a new flower (with optional photo)
 app.post('/api/flowers', upload.single('photo'), async (req, res) => {
-  const { x, y, plantedBy, message, date, flowerType } = req.body;
-  const id = uuidv4();
-  const photoPath = req.file ? `/uploads/${req.file.filename}` : null;
-  const createdAt = new Date().toISOString();
-  
-  await db.run(
-    `INSERT INTO flowers (id, x, y, plantedBy, message, date, flowerType, photo, createdAt, bloom) 
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [id, parseFloat(x), parseFloat(y), plantedBy || 'unknown', message || '', date || createdAt, flowerType || 'rose', photoPath, createdAt, 2]
-  );
-  
-  const newFlower = await db.get('SELECT * FROM flowers WHERE id = ?', [id]);
-  res.json(newFlower);
+  try {
+    const { x, y, plantedBy, message, date, flowerType } = req.body;
+    let photoUrl = null;
+    let photoId = null;
+
+    // Upload to Cloudinary if photo is attached
+    if (req.file) {
+      const result = await uploadToCloudinary(req.file.buffer);
+      photoUrl = result.secure_url;
+      photoId = result.public_id;
+    }
+
+    const createdAt = new Date().toISOString();
+    
+    const newFlower = await Flower.create({
+      x: parseFloat(x),
+      y: parseFloat(y),
+      plantedBy: plantedBy || 'unknown',
+      message: message || '',
+      date: date || createdAt,
+      flowerType: flowerType || 'rose',
+      photo: photoUrl,
+      photoId: photoId,
+      createdAt: createdAt,
+      bloom: 2
+    });
+    
+    res.json(newFlower);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // DELETE a flower
 app.delete('/api/flowers/:id', async (req, res) => {
-  const id = req.params.id;
-  const flower = await db.get('SELECT photo FROM flowers WHERE id = ?', [id]);
-  
-  if (!flower) return res.status(404).json({ error: 'Not found' });
-  
-  if (flower.photo) {
-    const filePath = path.join(__dirname, flower.photo);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  try {
+    const flower = await Flower.findById(req.params.id);
+    if (!flower) return res.status(404).json({ error: 'Not found' });
+    
+    // Delete photo from Cloudinary if one was attached
+    if (flower.photoId) {
+      await cloudinary.uploader.destroy(flower.photoId);
+    }
+    
+    await Flower.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
   }
-  
-  await db.run('DELETE FROM flowers WHERE id = ?', [id]);
-  res.json({ success: true });
 });
 
 // PATCH update bloom stage
 app.patch('/api/flowers/:id/bloom', async (req, res) => {
-  const id = req.params.id;
-  const flower = await db.get('SELECT bloom FROM flowers WHERE id = ?', [id]);
-  
-  if (!flower) return res.status(404).json({ error: 'Not found' });
-  
-  const newBloom = Math.min(2, (flower.bloom || 0) + 1);
-  await db.run('UPDATE flowers SET bloom = ? WHERE id = ?', [newBloom, id]);
-  
-  const updatedFlower = await db.get('SELECT * FROM flowers WHERE id = ?', [id]);
-  res.json(updatedFlower);
+  try {
+    const flower = await Flower.findById(req.params.id);
+    if (!flower) return res.status(404).json({ error: 'Not found' });
+    
+    flower.bloom = Math.min(2, (flower.bloom || 0) + 1);
+    await flower.save();
+    
+    res.json(flower);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log('');
-  console.log('  🌸 Memory Garden API is running on SQLite!');
+  console.log('  🌸 Memory Garden API is running on MongoDB & Cloudinary!');
   console.log(`  📡 http://localhost:${PORT}`);
   console.log('');
 });
