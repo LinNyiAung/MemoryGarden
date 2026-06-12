@@ -4,6 +4,7 @@ import Avatar from './components/Avatar.jsx';
 import GardenCanvas from './components/GardenCanvas.jsx';
 import PlantModal from './components/PlantModal.jsx';
 import MemoryModal from './components/MemoryModal.jsx';
+import PinScreen from './components/PinScreen.jsx';
 import { FlowerSVG } from './components/FlowerSVG.jsx';
 import { getFlowers, getGarden, plantFlower, deleteFlower, updateGarden, uploadAvatar } from './api.js';
 import { useDayNight } from './useDayNight.js';
@@ -87,6 +88,9 @@ function DayNightBadge({ phase, timeString }) {
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    localStorage.getItem('garden_unlocked') === 'true'
+  );
   const [flowers, setFlowers] = useState([]);
   const [garden, setGarden] = useState({ title: 'Our Memory Garden', himPhoto: null, herPhoto: null });
   const [selectedAvatar, setSelectedAvatar] = useState(null);
@@ -211,6 +215,17 @@ export default function App() {
       </motion.div>
     </>
   );
+
+  if (!isAuthenticated) {
+    return (
+      <AnimatePresence mode="wait">
+        <PinScreen key="pin-screen" onUnlock={() => {
+          localStorage.setItem('garden_unlocked', 'true');
+          setIsAuthenticated(true);
+        }} />
+      </AnimatePresence>
+    );
+  }
 
   return (
     <motion.div
