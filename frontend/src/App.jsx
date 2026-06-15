@@ -14,6 +14,59 @@ import WeatherBadge from './components/WeatherBadge.jsx';
 // Hardcoded names
 const NAMES = { him: 'Lin Nyi Aung', her: 'Htet Hsu Waddy' };
 
+// ─── Anniversary Counter ─────────────────────────────────────────────────────
+function AnniversaryCounter({ isNight }) {
+  // Set your anniversary date here
+  const anniversary = new Date('2025-12-19T00:00:00');
+  const [elapsed, setElapsed] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date();
+      // Calculate difference in milliseconds (ensure it doesn't go negative if date is in future)
+      const diff = Math.max(0, now - anniversary); 
+      
+      setElapsed({
+        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((diff / 1000 / 60) % 60),
+        seconds: Math.floor((diff / 1000) % 60)
+      });
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, []);
+
+  const textColor = isNight ? 'rgba(180,190,255,0.85)' : 'var(--text-mid)';
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -5 }} 
+      animate={{ opacity: 1, y: 0 }}
+      style={{ 
+        fontSize: 14, 
+        color: textColor, 
+        marginTop: 12, 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        gap: 8 
+      }}
+    >
+      <span>💝 Together for:</span>
+      <div style={{ 
+        fontWeight: 700, 
+        background: isNight ? 'rgba(255,255,255,0.1)' : 'rgba(244,160,181,0.15)', 
+        padding: '4px 12px', 
+        borderRadius: 16,
+        fontFamily: "'Lato', monospace"
+      }}>
+        {elapsed.days}d {elapsed.hours}h {elapsed.minutes}m {elapsed.seconds}s
+      </div>
+    </motion.div>
+  );
+}
+
 // ─── Falling petals — colour-shifts with time of day ─────────────────────────
 function FallingPetals({ phase }) {
   // Night: fewer, dimmer petals; daytime: full show
@@ -270,6 +323,9 @@ export default function App() {
           <p style={{ fontSize: 13, color: textLightOverride || 'var(--text-light)', marginTop: 4 }}>
             {flowers.length === 0 ? 'No memories yet — plant the first one!' : `${flowers.length} memor${flowers.length === 1 ? 'y' : 'ies'} blooming 🌿`}
           </p>
+          
+          {/* Inject the live anniversary counter right under the memories tally */}
+          <AnniversaryCounter isNight={isNight} />
         </div>
 
         {/* Controls bar */}
