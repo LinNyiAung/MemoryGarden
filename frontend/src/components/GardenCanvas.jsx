@@ -530,11 +530,23 @@ function GardenCanvas({ flowers, selectedAvatar, plantingMode, onPlantAt, onFlow
           initial={{ scale: 0, y: 20, opacity: 0 }}
           animate={{ scale: 1, y: 0, opacity: 1 }}
           transition={{ type: 'spring', damping: 12, stiffness: 200 }}
-          onClick={(e) => { e.stopPropagation(); onFlowerClick(flower); }}
-          style={{ position: 'absolute', left: `${flower.x}%`, top: `${flower.y}%`, transform: 'translate(-50%, -80%)', cursor: 'pointer', zIndex: 8 }}
+          onClick={(e) => { 
+            if (plantingMode) return; // Prevent selecting the flower while planting
+            e.stopPropagation(); 
+            onFlowerClick(flower); 
+          }}
+          style={{ 
+            position: 'absolute', 
+            left: `${flower.x}%`, 
+            top: `${flower.y}%`, 
+            transform: 'translate(-50%, -80%)', 
+            cursor: plantingMode ? 'crosshair' : 'pointer', 
+            pointerEvents: plantingMode ? 'none' : 'auto', // 🌸 Fix: Lets clicks pass through when planting
+            zIndex: 8 
+          }}
         >
           <motion.div
-            whileHover={{ scale: 1.25, y: -6 }}
+            whileHover={!plantingMode ? { scale: 1.25, y: -6 } : {}} // Optional: disable hover effect while planting
             animate={{ y: [0, -4, 0] }}
             transition={{ y: { duration: 2.5 + (flower.id.charCodeAt(0) % 10) * 0.3, repeat: Infinity, ease: 'easeInOut' } }}
             style={{ filter: 'drop-shadow(0 5px 10px rgba(0,0,0,0.18))' }}
@@ -542,7 +554,7 @@ function GardenCanvas({ flowers, selectedAvatar, plantingMode, onPlantAt, onFlow
             <FlowerSVG type={flower.flowerType} size={54} bloom={flower.bloom ?? 2} />
           </motion.div>
           <motion.div
-            initial={{ opacity: 0 }} whileHover={{ opacity: 1 }}
+            initial={{ opacity: 0 }} whileHover={!plantingMode ? { opacity: 1 } : {}}
             style={{ position: 'absolute', bottom: -18, left: '50%', transform: 'translateX(-50%)', background: 'rgba(61,44,30,0.75)', color: 'white', fontSize: 9, padding: '2px 7px', borderRadius: 8, whiteSpace: 'nowrap', backdropFilter: 'blur(4px)' }}
           >
             {flower.plantedBy}
