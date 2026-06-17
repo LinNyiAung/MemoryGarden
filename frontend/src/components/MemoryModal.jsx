@@ -86,11 +86,21 @@ function MemoryModal({ flower, onClose, onDelete }) {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
+              style={{
+                maxHeight: '45vh', // Caps the photo container at 45% of the screen height
+                overflowY: 'auto', // Turns on the vertical scrollbar if the photo is longer than the container
+                backgroundColor: 'rgba(0,0,0,0.02)', // Subtle background for the scroll area
+                borderBottom: '1px solid rgba(160,120,80,0.1)' // Soft divider line
+              }}
             >
               <img
                 src={flower.photo}
                 alt="Memory"
-                style={{ width: '100%', maxHeight: 220, objectFit: 'cover', display: 'block' }}
+                style={{ 
+                  width: '100%', 
+                  height: 'auto', // Allows the image to drop down to its full natural height
+                  display: 'block' 
+                }}
               />
             </motion.div>
           )}
