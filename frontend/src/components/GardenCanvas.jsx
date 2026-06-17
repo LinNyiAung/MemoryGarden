@@ -300,7 +300,25 @@ function GardenBackground({ phase }) {
         ))}
       </svg>
 
-      {/* ── NIGHT TINT over ground ── */}
+      {/* ── AMBIENT TINT over entire canvas (Dims everything smoothly) ── */}
+      <AnimatePresence>
+        {phase.ambientTint && phase.ambientTint !== 'rgba(0,0,0,0)' && (
+          <motion.div
+            key={`ambient-tint-${phase.name}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 3 }}
+            style={{
+              position: 'absolute', inset: 0, /* Covers the whole scene */
+              background: phase.ambientTint,
+              zIndex: 10, pointerEvents: 'none',
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── NIGHT TINT over ground (Moved behind flowers) ── */}
       <AnimatePresence>
         {phase.grassTint && phase.grassTint !== 'rgba(0,0,0,0)' && (
           <motion.div
@@ -313,7 +331,8 @@ function GardenBackground({ phase }) {
               position: 'absolute', bottom: 0, left: 0, right: 0,
               height: '42%',
               background: phase.grassTint,
-              zIndex: 10, pointerEvents: 'none',
+              zIndex: 7, /* Reduced from 10 to 7 so it sits behind the flowers (zIndex: 8) */
+              pointerEvents: 'none',
             }}
           />
         )}
