@@ -436,9 +436,9 @@ export default function App() {
           </div>
         )}
 
-        <p style={{ textAlign: 'center', fontSize: 12, color: textLightOverride || 'var(--text-light)', marginTop: 40, paddingBottom: 20 }}>
+        {/* <p style={{ textAlign: 'center', fontSize: 12, color: textLightOverride || 'var(--text-light)', marginTop: 40, paddingBottom: 20 }}>
           Made with 💕 for {NAMES.him} & {NAMES.her}
-        </p>
+        </p> */}
       </div>
 
       {pendingPosition && (
