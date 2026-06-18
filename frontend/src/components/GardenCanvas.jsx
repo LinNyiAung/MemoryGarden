@@ -509,7 +509,10 @@ function GardenCanvas({ flowers, selectedAvatar, plantingMode, onPlantAt, onFlow
       }}
     >
       <GardenBackground phase={currentPhase} />
-      <WeatherEffects condition={weather?.condition} />
+      <WeatherEffects 
+        condition={weather?.condition} 
+        isNight={currentPhase.name === 'deep-night' || currentPhase.name === 'night' || currentPhase.name === 'dusk'} 
+      />
 
       {/* Planting zone overlays */}
       {plantingMode && (

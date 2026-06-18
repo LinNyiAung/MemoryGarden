@@ -221,19 +221,23 @@ function Thunderstorm() {
 }
 
 // ─── Cloudy haze ──────────────────────────────────────────────────────────────
-function CloudHaze({ light }) {
+function CloudHaze({ light, isNight }) {
+  // Use a flat gray for day, but a rich, dark translucent blue for night
+  const dayHaze = light ? 'rgba(200,210,220,0.06)' : 'rgba(160,170,185,0.14)';
+  const nightHaze = light ? 'rgba(40,50,90,0.15)' : 'rgba(20,30,60,0.3)';
+
   return (
     <div style={{
       position: 'absolute', inset: 0, zIndex: 10, pointerEvents: 'none',
-      background: light
-        ? 'rgba(200,210,220,0.06)'
-        : 'rgba(160,170,185,0.14)',
+      background: isNight ? nightHaze : dayHaze,
+      // 'overlay' keeps the glowing lights vivid while deepening the darks
+      mixBlendMode: isNight ? 'overlay' : 'normal', 
     }} />
   );
 }
 
 // ─── Main export ──────────────────────────────────────────────────────────────
-function WeatherEffects({ condition }) {
+function WeatherEffects({ condition, isNight }) {
   if (!condition || condition === 'clear') return null;
 
   return (
@@ -252,8 +256,8 @@ function WeatherEffects({ condition }) {
         {condition === 'snow'         && <Snow />}
         {condition === 'fog'          && <Fog />}
         {condition === 'thunderstorm' && <Thunderstorm />}
-        {condition === 'cloudy'       && <CloudHaze />}
-        {condition === 'partly-cloudy'&& <CloudHaze light />}
+        {condition === 'cloudy'       && <CloudHaze isNight={isNight} />}
+        {condition === 'partly-cloudy'&& <CloudHaze light isNight={isNight} />}
       </motion.div>
     </AnimatePresence>
   );
